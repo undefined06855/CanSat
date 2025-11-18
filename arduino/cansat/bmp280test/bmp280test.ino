@@ -19,14 +19,24 @@
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
 
+// from left to right
+// CSB - CHIP SELECT - 10
+// n/c
+// SDO - MISO        - 12
+// SDA - MOSI        - 11
+// SCL - CLOCK       - 13
+// GND
+// 3v3
+// VIN
+
 #define BMP_SCK  (13)
 #define BMP_MISO (12)
 #define BMP_MOSI (11)
 #define BMP_CS   (10)
 
-Adafruit_BMP280 bmp; // I2C
+//Adafruit_BMP280 bmp; // I2C
 //Adafruit_BMP280 bmp(BMP_CS); // hardware SPI
-//Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
+Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK); // software spi!!
 
 void setup() {
   Serial.begin(9600);
@@ -36,13 +46,9 @@ void setup() {
   //status = bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
   status = bmp.begin();
   if (!status) {
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                      "try a different address!"));
-    Serial.print("SensorID was: 0x"); Serial.println(bmp.sensorID(),16);
-    Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-    Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-    Serial.print("        ID of 0x60 represents a BME 280.\n");
-    Serial.print("        ID of 0x61 represents a BME 680.\n");
+    Serial.println("Sensor disconnected!");
+    Serial.println(bmp.sensorID(), 16);
+  
     while (1) delay(10);
   }
 
@@ -66,6 +72,8 @@ void loop() {
     Serial.print(F("Approx altitude = "));
     Serial.print(bmp.readAltitude(1013.25)); /* Adjusted to local forecast! */
     Serial.println(" m");
+
+    // need to read gyro stuff as well by the way
 
     Serial.println();
     delay(2000);
