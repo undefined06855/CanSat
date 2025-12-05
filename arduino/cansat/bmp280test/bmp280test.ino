@@ -20,11 +20,11 @@
 #include <Adafruit_BMP280.h>
 
 // from left to right
-// CSB - CHIP SELECT - 10
+// CSB - CHIP SELECT - 10 - 1
 // n/c
-// SDO - MISO        - 12
-// SDA - MOSI        - 11
-// SCL - CLOCK       - 13
+// SDO - MISO        - 12 - 3
+// SDA - MOSI        - 11 - 4
+// SCL - CLOCK       - 13 - 5
 // GND
 // 3v3
 // VIN
@@ -48,7 +48,7 @@ void setup() {
   if (!status) {
     Serial.println("Sensor disconnected!");
     Serial.println(bmp.sensorID(), 16);
-  
+
     while (1) delay(10);
   }
 
