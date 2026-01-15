@@ -14,9 +14,9 @@ Datalogger is software SPI
 | 7  | APC220 1 (SET) |
 | 8  | APC220 3 (TXD) |
 | 9  | APC220 4 (RXD) |
-| 10 | Datalogger ? (MOSI) |
-| 11 | Datalogger ? (MISO) |
-| 12 | Datalogger ? (SCK) |
+| 10 | Datalogger 2 (MOSI) |
+| 11 | Datalogger 3 (MISO) |
+| 12 | Datalogger 4 (SCK) |
 | A4 | GY-91 4 (SDA) |
 | A5 | GY-91 5 (SCL) |
 
@@ -48,12 +48,12 @@ Datalogger is software SPI
 ### Datalogger
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
-| 1 | make | !! |
-| 2 | sure | !! |
-| 3 | to | !! |
-| 4 | fill | !! |
-| 5 | this | !! |
-| 6 | out | !! |
+| 1 | GND | Ground pin, connected to Arduino GND |
+| 2 | MOSI | Master out slave in pin, connected to Arduino 10 |
+| 3 | MISO | Master in slave out pin, connected to Arduino 11 |
+| 4 | SCK | Clock pin, connected to Arduino 12 |
+| 5 | 3v3 | 3v3 pin, connected to Arduino 3v3 |
+| 6 | RST | Reset pin? Don't connect probably |
 
 ## Radio Packets
 
@@ -64,6 +64,7 @@ and is ready to start.
 | Size | Part | Example |
 | -----: | :----- | :-----: |
 | `1` | Prefix | `0xAA` |
+| `1` | Error | See error table below |
 | `8` | Version Name | A null-terminated 7 letter SkyWing name, e.g. `0x80 0x69 0x82 0x73 0x76 0x32 0x32 0x00` "`PERIL  \x00`" |
 
 ### Data Packet (SAT -> BASE)
@@ -105,7 +106,16 @@ Sent by the base when the satellite should stop collecting data.
 | -----: | :----- | :-----: |
 | `1` | Prefix | `0xBC` |
 
-## Radio Config String
+## References
+
+### Error Codes
+| Code | Error |
+| 0xFF | No error |
+| 0x01 | IMU setup failed |
+| 0x02 | Logger setup failed |
+| 0x03 | Radio setup failed |
+
+### Radio Config String
 `WR <frequency> <rf data rate> <output power> <uart rate> <series checkout>`
 Possible values:
     - Frequency (KHz), (434MHz = 434000 etc)

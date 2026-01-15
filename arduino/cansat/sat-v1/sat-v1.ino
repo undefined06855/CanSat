@@ -9,6 +9,7 @@
  * Arduino 10  -  Datalogger (MOSI)
  * Arduino 11  -  Datalogger (MISO)
  * Arduino 12  -  Datalogger (SCK)
+ * 
  * Note: Datalogger has no CS pin!
  *
  * Requirements:
@@ -49,11 +50,14 @@ struct ImuPacket {
 
 struct IdlePacket {
     uint8_t prefix;
+    uint8_t error;
     char name[8];
 };
 
 ImuState imu_lastState = { 0 };
 uint8_t* radio_buffer;
+
+uint8_t error = 0xff;
 
 // https://github.com/Schildkroet/CRC/blob/master/CRC.c#L106
 uint16_t checksum_calculate(const uint8_t* data, int size) {
@@ -282,6 +286,7 @@ void radio_sendLastIMUReading() {
 void radio_sendIdlePacket() {
     IdlePacket data = {
         0xAA,
+        error,
         VERSION_STRING
     };
 
@@ -308,23 +313,28 @@ void setup() {
 
     if (!imu_setup()) {
         Serial.println("IMU SETUP FAILED!");
-        return;
+        error = 0x01;
+//        return;
     }
 
     if (!logger_setup()) {
         Serial.println("LOGGER SETUP FAILED!");
+        error = 0x02;
         return;
     }
 
     if (!radio_setup()) {
         Serial.println("RADIO SETUP FAILED!");
+        error = 0x03;
         return;
     }
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
     radio_sendData(VERSION_STRING "\n" );
+    digitalWrite(13, HIGH); // turn on internal LED
 }
 
+// -1 - error
 // 0 - waiting
 // 1 - launched
 int state = 0;
@@ -345,10 +355,16 @@ void loop() {
                 radio_sendData((char*)&data[1]);
                 digitalWrite(7, HIGH);
             } break;
+
+            case 0xBC: {
+                logger_sendData("land packet received");
+                state = 0;
+            }
         }
     }
 
     switch (state) {
+        case -1:
         case 0: {
             // send idle packet
             radio_sendIdlePacket();
