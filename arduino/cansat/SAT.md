@@ -49,11 +49,9 @@ Datalogger is software SPI
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
 | 1 | GND | Ground pin, connected to Arduino GND |
-| 2 | MOSI | Master out slave in pin, connected to Arduino 10 |
-| 3 | MISO | Master in slave out pin, connected to Arduino 11 |
-| 4 | SCK | Clock pin, connected to Arduino 12 |
-| 5 | 3v3 | 3v3 pin, connected to Arduino 3v3 |
-| 6 | RST | Reset pin? Don't connect probably |
+| 2 | RXD | RX pin, connected to Arduino 11 |
+| 3 | TXD | TX pin, connected to Arduino 10 |
+| 4 | 5V | 5V, connect to Arduino 5V |
 
 ## Radio Packets
 

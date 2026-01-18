@@ -4,33 +4,30 @@
  * Arduino A5  -  GY-91 pin 5 (clock)
  * Arduino A4  -  GY-91 pin 4 (data)
  * Arduino 7   -  APC220 pin 1 (SET)
- * Arduino 8   -  APC220 pin 3 (TX) (with p/u resistor to 3.3v)
- * Arduino 9   -  APC220 pin 4 (RX) (with p/u resistor to 3.3v)
- * Arduino 10  -  Datalogger (MOSI)
- * Arduino 11  -  Datalogger (MISO)
- * Arduino 12  -  Datalogger (SCK)
- * 
- * Note: Datalogger has no CS pin!
+ * Arduino 8   -  APC220 pin 3 (TX) (with p/u resistor to 3.3v?)
+ * Arduino 9   -  APC220 pin 4 (RX) (with p/u resistor to 3.3v?)
+ * Arduino 10  -  Datalogger (TX) (does this need pull up resistor?)
+ * Arduino 11  -  Datalogger (RX)
+ *
+ * Note: don't connect anything to pin 13 since the internal light is used to show when it's finished initialising!
  *
  * Requirements:
  *  - https://github.com/sparkfun/SparkFun_MPU-9250_Breakout_Arduino_Library (install as zip)
- *  - https://github.com/MajenkoLibraries/SoftSPI (also install as zip)
  *  - being cool enough
- *  
+ *
  */
 
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
 #include <MPU9250.h>
 #include <quaternionFilters.h>
-#include <SoftSPI.h>
 #include <SoftwareSerial.h>
 
 #define VERSION_STRING "KESTREL"
 
 MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
-SoftSPI logger(10, 11, 12);
-SoftwareSerial radio(8, 9);
+SoftwareSerial logger(11, 10); // rx, tx (NEED TO CHECK IF THESE NEED TO BE SWAPPED!!!!!)
+SoftwareSerial radio(9, 8); // rx, tx
 
 struct ImuState {
     float accelX, accelY, accelZ;
@@ -74,81 +71,81 @@ uint16_t checksum_calculate(const uint8_t* data, int size) {
             }
         }
     }
-    
+
     return checksum ^ 0xff;
 }
 
 // initialises the IMU (GY-91)
 // https://github.com/sparkfun/SparkFun_MPU-9250_Breakout_Arduino_Library/blob/master/examples/MPU9250BasicAHRS_I2C/MPU9250BasicAHRS_I2C.ino
 bool imu_setup() {
-    Serial.println("-- IMU SETUP BEGIN --");
+    Serial.println(F("-- IMU SETUP BEGIN --"));
 
     Wire.begin();
 
     // gyro setup
 
-    Serial.println("imu gyro setup...");
+    Serial.println(F("imu gyro setup..."));
     byte c = imu.readByte(MPU9250_ADDRESS_AD0, WHO_AM_I_MPU9250);
-    Serial.print("imu gyro whoami (0x71): 0x"); Serial.println(c, HEX);
+    Serial.print(F("imu gyro whoami (0x71): 0x")); Serial.println(c, HEX);
     if (c != 0x71) return false;
 
     Serial.println("imu gyro self test...");
 
     imu.MPU9250SelfTest(imu.selfTest);
-    Serial.print("x-axis self test: acceleration trim within: ");
+    Serial.println(F("x-axis self test: acceleration trim within: "));
     Serial.print(imu.selfTest[0], 1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: acceleration trim within: ");
+    Serial.println(F("y-axis self test: acceleration trim within: "));
     Serial.print(imu.selfTest[1], 1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: acceleration trim within: ");
+    Serial.println(F("z-axis self test: acceleration trim within: "));
     Serial.print(imu.selfTest[2], 1); Serial.println("% of factory value");
-    Serial.print("x-axis self test: gyration trim within: ");
+    Serial.println(F("x-axis self test: gyration trim within: "));
     Serial.print(imu.selfTest[3], 1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: gyration trim within: ");
+    Serial.println(F("y-axis self test: gyration trim within: "));
     Serial.print(imu.selfTest[4], 1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: gyration trim within: ");
+    Serial.println(F("z-axis self test: gyration trim within: "));
     Serial.print(imu.selfTest[5], 1); Serial.println("% of factory value");
 
-    Serial.println("imu gyro calibration...");
+    Serial.println(F("imu gyro calibration..."));
     imu.calibrateMPU9250(imu.gyroBias, imu.accelBias);
 
-    Serial.println("imu gyro init...");
+    Serial.println(F("imu gyro init..."));
     imu.initMPU9250();
 
     // magnetometer setup
 
-    Serial.println("imu magnetometer setup...");
+    Serial.println(F("imu magnetometer setup..."));
     byte d = imu.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
-    Serial.print("imu magnetometer whoami (0x48): 0x"); Serial.println(d, HEX);
+    Serial.print(F("imu magnetometer whoami (0x48): 0x")); Serial.println(d, HEX);
     if (d != 0x48) return false;
 
-    Serial.println("imu magnetometer factory values:");
-    Serial.print("x-axis factory sensitivity adjustment value: ");
+    Serial.println(F("imu magnetometer factory values:"));
+    Serial.print(F("x-axis factory sensitivity adjustment value: "));
     Serial.println(imu.factoryMagCalibration[0], 2);
-    Serial.print("y-axis factory sensitivity adjustment value: ");
+    Serial.print(F("y-axis factory sensitivity adjustment value: "));
     Serial.println(imu.factoryMagCalibration[1], 2);
-    Serial.print("z-axis factory sensitivity adjustment value: ");
+    Serial.print(F("z-axis factory sensitivity adjustment value: "));
     Serial.println(imu.factoryMagCalibration[2], 2);
 
-    Serial.println("imu magnetometer init...");
+    Serial.println(F("imu magnetometer init..."));
     imu.initAK8963(imu.factoryMagCalibration);
 
-    Serial.println("imu get sensor resolutions (wait 19 seconds)...");
+    Serial.println(F("imu get sensor resolutions (wait 19 seconds)..."));
     imu.getAres();
     imu.getGres();
     imu.getMres();
 
     imu.magCalMPU9250(imu.magBias, imu.magScale); // delays 4s, gathers 15s of data
-    Serial.println("imu magnetometer mag biases (mG)");
+    Serial.println(F("imu magnetometer mag biases (mG)"));
     Serial.println(imu.magBias[0]);
     Serial.println(imu.magBias[1]);
     Serial.println(imu.magBias[2]);
 
-    Serial.println("imu magnetometer mag scale (mG)");
+    Serial.println(F("imu magnetometer mag scale (mG)"));
     Serial.println(imu.magScale[0]);
     Serial.println(imu.magScale[1]);
     Serial.println(imu.magScale[2]);
 
-    Serial.println("-- IMU SETUP COMPLETE --");
+    Serial.println(F("-- IMU SETUP COMPLETE --"));
     return true;
 }
 
@@ -220,20 +217,22 @@ void imu_read() {
 
 // initialises the logger
 bool logger_setup() {
-    Serial.println("-- LOGGER SETUP BEGIN --");
-  
-    logger.begin();
+    Serial.println(F("-- LOGGER SETUP BEGIN --"));
 
-    Serial.println("-- LOGGER SETUP COMPLETE --");
+    Serial.println(F("initialising at 115200 baud"));
+
+    logger.begin(115200);
+
+    Serial.println(F("-- LOGGER SETUP COMPLETE --"));
     return true;
 }
 
 void logger_sendData(const char* data) {
-    logger_sendData("[ ");
-    logger_sendData(String(millis()).c_str());
-    logger_sendData("ms ]: ");
-    logger_sendData(data);
-    logger_sendData("\n");
+    logger_sendDataRaw("[ ");
+    logger_sendDataRaw(String(millis()).c_str());
+    logger_sendDataRaw("ms ]: ");
+    logger_sendDataRaw(data);
+    logger_sendDataRaw("\n");
     Serial.println(data);
 }
 
@@ -245,18 +244,24 @@ void logger_sendDataRaw(const char* data) {
 
 void logger_sendBytes(const uint8_t* data, int size) {
     for (int i = 0; i < size; i++) {
-        logger.transfer(data[i]);
+        logger.write(data[i]);
     }
+
+    logger.flush();
+
+    Serial.print(F("logged ")); Serial.print(size); Serial.println(F(" bytes"));
 }
 
 // initialises the radio (APC220)
 bool radio_setup() {
-    Serial.println("-- RADIO SETUP BEGIN --");
+    Serial.println(F("-- RADIO SETUP BEGIN --"));
+
+    Serial.println("beginning at 2400 baud, writing pin 7 high");
 
     radio.begin(2400);
     digitalWrite(7, HIGH);
 
-    Serial.println("-- RADIO SETUP COMPLETE --");
+    Serial.println(F("-- RADIO SETUP COMPLETE --"));
     return true;
 }
 
@@ -312,25 +317,25 @@ void setup() {
     radio_buffer = (uint8_t*)malloc(32);
 
     if (!imu_setup()) {
-        Serial.println("IMU SETUP FAILED!");
+        Serial.println(F("-- IMU SETUP FAILED! --"));
         error = 0x01;
 //        return;
     }
 
     if (!logger_setup()) {
-        Serial.println("LOGGER SETUP FAILED!");
+        Serial.println(F("-- LOGGER SETUP FAILED! --"));
         error = 0x02;
-        return;
+//        return;
     }
 
     if (!radio_setup()) {
-        Serial.println("RADIO SETUP FAILED!");
+        Serial.println(F("-- RADIO SETUP FAILED! --"));
         error = 0x03;
-        return;
+//        return;
     }
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
-    radio_sendData(VERSION_STRING "\n" );
+    radio_sendData(VERSION_STRING "\n");
     digitalWrite(13, HIGH); // turn on internal LED
 }
 
