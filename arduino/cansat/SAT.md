@@ -6,17 +6,16 @@ GY-91 sensor (which contains a BMP-280 though we have spare BMP-280 only boards)
 
 GY-91 is connected through hardware i2c
 Radio is connected through serial
-Datalogger is software SPI
+Datalogger is connected through serial
 
 ## Arduino Pin Mapping
 | Arduino Pin | Chip Pin |
 | -----: | :----- |
 | 7  | APC220 1 (SET) |
-| 8  | APC220 3 (TXD) |
-| 9  | APC220 4 (RXD) |
-| 10 | Datalogger 2 (MOSI) |
-| 11 | Datalogger 3 (MISO) |
-| 12 | Datalogger 4 (SCK) |
+| 8  | APC220 4 (RXD) |
+| 9  | APC220 3 (TXD) |
+| 10 | Datalogger 2 (RX) |
+| 11 | Datalogger 3 (TX) |
 | A4 | GY-91 4 (SDA) |
 | A5 | GY-91 5 (SCL) |
 
@@ -26,10 +25,10 @@ Datalogger is software SPI
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
 | 1 | SET | Configuration set pin, set low while configuring, connected to Arduino 7 |
-| 2 | AUX | n/c |
-| 3 | TXD | TX pin, connected to Arduino 8 |
-| 4 | RXD | RX pin, connected to Arduino 9 |
-| 5 | EN  | n/c |
+| 2 | AUX | Radio status, maybe connect to LED in final CanSat? |
+| 3 | TXD | TX pin, connected to Arduino 9 |
+| 4 | RXD | RX pin, connected to Arduino 8 |
+| 5 | EN  | Enable pin, connect to 3v3 |
 | 6 | VCC | 3v3 pin, connected to Arduino 3v3 |
 | 7 | GND | Ground pin, connected to Arduino GND |
 
@@ -49,8 +48,8 @@ Datalogger is software SPI
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
 | 1 | GND | Ground pin, connected to Arduino GND |
-| 2 | RXD | RX pin, connected to Arduino 11 |
-| 3 | TXD | TX pin, connected to Arduino 10 |
+| 2 | RXD | RX pin, connected to Arduino 10 |
+| 3 | TXD | TX pin, connected to Arduino 11 |
 | 4 | 5V | 5V, connect to Arduino 5V |
 
 ## Radio Packets
