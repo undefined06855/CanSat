@@ -32,9 +32,9 @@
     7 GND connected to ground
 */
 
-const int pinRX = 4;
-const int pinTX = 7;
-const int pinSET = 13;
+const int pinRX = 9;
+const int pinTX = 8;
+const int pinSET = 7;
 
 SoftwareSerial apc220(pinRX, pinTX); // Crt softserial port and bind tx / rx to appropriate PINS
 

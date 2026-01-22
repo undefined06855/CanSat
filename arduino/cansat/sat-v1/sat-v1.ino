@@ -4,15 +4,17 @@
  * Arduino A5  -  GY-91 pin 5 (clock)
  * Arduino A4  -  GY-91 pin 4 (data)
  * Arduino 7   -  APC220 pin 1 (SET)
- * Arduino 8   -  APC220 pin 3 (TX) (with p/u resistor to 3.3v?)
- * Arduino 9   -  APC220 pin 4 (RX) (with p/u resistor to 3.3v?)
- * Arduino 10  -  Datalogger (TX) (does this need pull up resistor?)
- * Arduino 11  -  Datalogger (RX)
+ * Arduino 8   -  APC220 pin 4 (RX)
+ * Arduino 9   -  APC220 pin 3 (TX)
+ * Arduino 10  -  Datalogger (RX)
+ * Arduino 11  -  Datalogger (TX)
  *
  * Note: don't connect anything to pin 13 since the internal light is used to show when it's finished initialising!
  *
  * Requirements:
  *  - https://github.com/sparkfun/SparkFun_MPU-9250_Breakout_Arduino_Library (install as zip)
+ *  - Adafruit BMP280 Library (+dependencies)
+
  *  - being cool enough
  *
  */
@@ -26,8 +28,8 @@
 #define VERSION_STRING "KESTREL"
 
 MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
-SoftwareSerial logger(11, 10); // rx, tx (NEED TO CHECK IF THESE NEED TO BE SWAPPED!!!!!)
-SoftwareSerial radio(9, 8); // rx, tx
+SoftwareSerial logger(11, 10); // tx, rx
+SoftwareSerial radio(9, 8); // tx, rx
 
 struct ImuState {
     float accelX, accelY, accelZ;
@@ -348,6 +350,8 @@ void loop() {
     uint8_t* data = (uint8_t*)radio_readData();
 
     if (data) {
+        Serial.println((const char*)data);
+        
         switch (data[0]) {
             case 0xBA: {
                 logger_sendData("launch packet received");
