@@ -35,9 +35,9 @@ Datalogger is connected through serial
 ### GY-91
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
-| 1 | CSB | Chip Select pin, connected to Arduino 10 |
+| 1 | CSB | Chip Select pin, not connected for i2c |
 | 2 | n/c | n/c |
-| 3 | SDO | n/c |
+| 3 | SDO | Serial data out pin, not connected |
 | 4 | SDA | Serial data pin, connected to Arduino A4 (hardware i2c) |
 | 5 | SCL | Serial clock pin, connected to Arduino A5 (hardware i2c) |
 | 6 | GND | Ground pin, connected to Arduino GND |
