@@ -41,6 +41,8 @@ struct ImuState {
     float refreshRate;
 };
 
+// TODO: move prefix+checksum into separate struct, make util to generate it from prefix, data, size for alignment
+// https://discord.com/channels/911701438269386882/1248524007859290205/1463990784364908832
 struct ImuPacket {
     uint8_t prefix;
     uint16_t checksum;
