@@ -253,8 +253,44 @@ void logger_sendBytes(const uint8_t* data, int size) {
     }
 
     logger.flush();
+}
 
-    Serial.print(F("logged ")); Serial.print(size); Serial.println(F(" bytes"));
+void logger_logLastIMUReading() {
+    String buf = String("");
+
+    // TODO: how inefficient is this?
+
+    buf.concat(String(imu_lastState.accelX));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.accelY));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.accelZ));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.gyroX));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.gyroY));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.gyroZ));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.magX));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.magY));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.magZ));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.yaw));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.pitch));
+    buf.concat(",");
+    buf.concat(String(imu_lastState.roll));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.temperature));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.count));
+    buf.concat("$");
+    buf.concat(String(imu_lastState.refreshRate));
+
+    logger_sendDataRaw(buf);
 }
 
 // initialises the radio (APC220)
@@ -397,12 +433,16 @@ void loop() {
         case -1:
         case 0: {
             // send idle packet
+            // idle packet contains error code
+            // (though since buzzer buzzes forever it never finishes initialising so this will never be called)
             radio_sendIdlePacket();
         } break;
 
         case 1: {
             // send imu data
+            // need to only send radio reading every so often
             imu_read();
+            logger_logLastIMUReading();
             radio_sendLastIMUReading();
         } break;
     }
