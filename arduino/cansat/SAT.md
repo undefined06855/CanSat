@@ -8,6 +8,11 @@ GY-91 is connected through hardware i2c
 Radio is connected through serial
 Datalogger is connected through serial
 
+A You Fucked Up&trade; buzzer is connected to Arduino pin 12 to beep initialisation errors. See error codes below for
+a list of the error codes.
+
+See circuit.cddx (or the CDR) for a circuit diagram.
+
 ## Arduino Pin Mapping
 | Arduino Pin | Chip Pin |
 | -----: | :----- |
@@ -25,7 +30,7 @@ Datalogger is connected through serial
 | Pin | Label | Notes |
 | -----: | :-----: | :----- |
 | 1 | SET | Configuration set pin, set low while configuring, connected to Arduino 7 |
-| 2 | AUX | Radio status, maybe connect to LED in final CanSat? |
+| 2 | AUX | Radio status, connected to an LED |
 | 3 | TXD | TX pin, connected to Arduino 9 |
 | 4 | RXD | RX pin, connected to Arduino 8 |
 | 5 | EN  | Enable pin, connect to 3v3 |
@@ -106,6 +111,9 @@ Sent by the base when the satellite should stop collecting data.
 ## References
 
 ### Error Codes
+
+The You Fucked Up&trade; buzzer buzzes the amount of beeps relating to the error code (call `buzzer_buzzError(error)`)
+
 | Code | Error |
 | 0xFF | No error |
 | 0x01 | IMU setup failed |

@@ -12,7 +12,7 @@ void setup() {
 unsigned long timeSent = 0;
 int received = 1;
 
-void loop() {  
+void loop() {
   /**/ // comment if this is for CANSAT
   if (received) {
      Serial.println("Sending...");
@@ -26,7 +26,7 @@ void loop() {
     }
   }
   //*/
-  
+
   if (apc.available() > 0) {
     /**/ // comment if this is for CANSAT
     Serial.print("Ping: ");
@@ -37,6 +37,9 @@ void loop() {
 
     // uncomment if this is for GROUND
 //    apc.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-    while (apc.available() > 0) apc.read();
+    while (apc.available() > 0) {
+      byte test = apc.read();
+      Serial.print((char) test);
+    }
   }
 }

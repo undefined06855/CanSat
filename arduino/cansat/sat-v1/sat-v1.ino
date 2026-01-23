@@ -8,6 +8,7 @@
  * Arduino 9   -  APC220 pin 3 (TX)
  * Arduino 10  -  Datalogger (RX)
  * Arduino 11  -  Datalogger (TX)
+ * Arduino 12  -  You Fucked Up Buzzer
  *
  * Note: don't connect anything to pin 13 since the internal light is used to show when it's finished initialising!
  *
@@ -315,6 +316,24 @@ void* radio_readData() {
     return radio_buffer;
 }
 
+void buzzer_buzzError(int beepCount) {
+    digitalWrite(12, HIGH);
+    delay(3000);
+    digitalWrite(12, LOW);
+    delay(2000);
+
+    while (true) {
+        for (int i = 0; i < beepCount; i++) {
+            digitalWrite(12, HIGH);
+            delay(200);
+            digitalWrite(12, LOW);
+            delay(200);
+        }
+        
+        delay(1000);
+    }
+}
+
 void setup() {
     Serial.begin(9600);
 
@@ -323,19 +342,19 @@ void setup() {
     if (!imu_setup()) {
         Serial.println(F("-- IMU SETUP FAILED! --"));
         error = 0x01;
-//        return;
+        buzzer_buzzError(error);
     }
 
     if (!logger_setup()) {
         Serial.println(F("-- LOGGER SETUP FAILED! --"));
         error = 0x02;
-//        return;
+        buzzer_buzzError(error);
     }
 
     if (!radio_setup()) {
         Serial.println(F("-- RADIO SETUP FAILED! --"));
         error = 0x03;
-//        return;
+        buzzer_buzzError(error);
     }
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
