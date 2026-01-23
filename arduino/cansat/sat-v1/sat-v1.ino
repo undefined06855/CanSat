@@ -29,6 +29,7 @@
 // TODO: rewrite all of this for version peril this code better not actually go up in the sky
 // now that i think about it kestrel was a pretty good first version name like at least she
 // wasnt the last version because she literally dies
+// tui can you write more skywings into the story im running out of well known characters there's like FOUR
 
 #define VERSION_STRING "KESTREL"
 
