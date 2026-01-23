@@ -26,6 +26,10 @@
 #include <quaternionFilters.h>
 #include <SoftwareSerial.h>
 
+// TODO: rewrite all of this for version peril this code better not actually go up in the sky
+// now that i think about it kestrel was a pretty good first version name like at least she
+// wasnt the last version because she literally dies
+
 #define VERSION_STRING "KESTREL"
 
 MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
@@ -440,7 +444,7 @@ void loop() {
 
         case 1: {
             // send imu data
-            // need to only send radio reading every so often
+            // TODO: need to only send radio reading every so often
             imu_read();
             logger_logLastIMUReading();
             radio_sendLastIMUReading();
