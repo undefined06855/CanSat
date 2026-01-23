@@ -261,40 +261,43 @@ void logger_sendBytes(const uint8_t* data, int size) {
 
 void logger_logLastIMUReading() {
     String buf = String("");
+    buf.reserve(130); // each number takes ~8 bytes, 8*15=120 so 130 bytes reserved, we really dont want to realloc
 
     // TODO: how inefficient is this?
 
-    buf.concat(String(imu_lastState.accelX));
+    const int dp = 5; // 5 decimal places
+
+    buf.concat(String(imu_lastState.accelX, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.accelY));
+    buf.concat(String(imu_lastState.accelY, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.accelZ));
+    buf.concat(String(imu_lastState.accelZ, dp));
     buf.concat("$");
-    buf.concat(String(imu_lastState.gyroX));
+    buf.concat(String(imu_lastState.gyroX, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.gyroY));
+    buf.concat(String(imu_lastState.gyroY, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.gyroZ));
+    buf.concat(String(imu_lastState.gyroZ, dp));
     buf.concat("$");
-    buf.concat(String(imu_lastState.magX));
+    buf.concat(String(imu_lastState.magX, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.magY));
+    buf.concat(String(imu_lastState.magY, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.magZ));
+    buf.concat(String(imu_lastState.magZ, dp));
     buf.concat("$");
-    buf.concat(String(imu_lastState.yaw));
+    buf.concat(String(imu_lastState.yaw, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.pitch));
+    buf.concat(String(imu_lastState.pitch, dp));
     buf.concat(",");
-    buf.concat(String(imu_lastState.roll));
+    buf.concat(String(imu_lastState.roll, dp));
     buf.concat("$");
-    buf.concat(String(imu_lastState.temperature));
+    buf.concat(String(imu_lastState.temperature, dp));
     buf.concat("$");
     buf.concat(String(imu_lastState.count));
     buf.concat("$");
-    buf.concat(String(imu_lastState.refreshRate));
+    buf.concat(String(imu_lastState.refreshRate, dp));
 
-    logger_sendDataRaw(buf);
+    logger_sendDataRaw(buf.c_str());
 }
 
 // initialises the radio (APC220)
