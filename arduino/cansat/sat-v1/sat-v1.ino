@@ -445,7 +445,6 @@ void setup() {
     digitalWrite(13, HIGH); // turn on internal LED
 }
 
-// -1 - error
 // 0 - waiting
 // 1 - launched
 int state = 0;
@@ -477,7 +476,6 @@ void loop() {
     }
 
     switch (state) {
-        case -1:
         case 0: {
             // send idle packet
             // idle packet contains error code
