@@ -30,8 +30,12 @@
 // now that i think about it kestrel was a pretty good first version name like at least she
 // wasnt the last version because she literally dies
 // tui can you write more skywings into the story im running out of well known characters there's like FOUR
+// this is why you dont use fictional character names for versioning
 
 #define VERSION_STRING "KESTREL"
+
+#define MPU_ADDRESS 0x68
+#define MAGNET_ADDRESS 0x76
 
 MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
 SoftwareSerial logger(11, 10); // tx, rx
@@ -95,25 +99,25 @@ bool imu_setup() {
     // gyro setup
 
     Serial.println(F("imu gyro setup..."));
-    byte c = imu.readByte(MPU9250_ADDRESS_AD0, WHO_AM_I_MPU9250);
-    Serial.print(F("imu gyro whoami (0x71): 0x")); Serial.println(c, HEX);
-    if (c != 0x71) return false;
+    byte c = imu.readByte(MPU9250_ADDRESS_AD0, WHO_AM_I_MPU9250); // 0x68 - our address (normal ad0)
+    Serial.print(F("imu gyro whoami (0x70): 0x")); Serial.println(c, HEX);
+    if (c != 0x70) return false;
 
-    Serial.println("imu gyro self test...");
+    Serial.println(F("imu gyro self test..."));
 
     imu.MPU9250SelfTest(imu.selfTest);
     Serial.println(F("x-axis self test: acceleration trim within: "));
-    Serial.print(imu.selfTest[0], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[0], 1); Serial.println(F("% of factory value"));
     Serial.println(F("y-axis self test: acceleration trim within: "));
-    Serial.print(imu.selfTest[1], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[1], 1); Serial.println(F("% of factory value"));
     Serial.println(F("z-axis self test: acceleration trim within: "));
-    Serial.print(imu.selfTest[2], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[2], 1); Serial.println(F("% of factory value"));
     Serial.println(F("x-axis self test: gyration trim within: "));
-    Serial.print(imu.selfTest[3], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[3], 1); Serial.println(F("% of factory value"));
     Serial.println(F("y-axis self test: gyration trim within: "));
-    Serial.print(imu.selfTest[4], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[4], 1); Serial.println(F("% of factory value"));
     Serial.println(F("z-axis self test: gyration trim within: "));
-    Serial.print(imu.selfTest[5], 1); Serial.println("% of factory value");
+    Serial.print(imu.selfTest[5], 1); Serial.println(F("% of factory value"));
 
     Serial.println(F("imu gyro calibration..."));
     imu.calibrateMPU9250(imu.gyroBias, imu.accelBias);
@@ -124,9 +128,9 @@ bool imu_setup() {
     // magnetometer setup
 
     Serial.println(F("imu magnetometer setup..."));
-    byte d = imu.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
-    Serial.print(F("imu magnetometer whoami (0x48): 0x")); Serial.println(d, HEX);
-    if (d != 0x48) return false;
+    byte d = imu.readByte(0x76, WHO_AM_I_AK8963); // 0x76 - our address (i think we have a bootleg? a few values aren't filled in but it seems to be   okay....)
+    Serial.print(F("imu magnetometer whoami (0x00): 0x")); Serial.println(d, HEX);
+    if (d != 0x00) return false;
 
     Serial.println(F("imu magnetometer factory values:"));
     Serial.print(F("x-axis factory sensitivity adjustment value: "));
@@ -299,6 +303,38 @@ void logger_logLastIMUReading() {
     buf.concat(String(imu_lastState.refreshRate, dp));
 
     logger_sendDataRaw(buf.c_str());
+/*
+    Serial.print(F(" AccelX: "));
+    Serial.print(String(imu_lastState.accelX, dp));
+    Serial.print(F(" AccelY: "));
+    Serial.print(String(imu_lastState.accelY, dp));
+    Serial.print(F(" AccelZ: "));
+    Serial.print(String(imu_lastState.accelZ, dp));
+    Serial.print(F(" GyroX: "));
+    Serial.print(String(imu_lastState.gyroX, dp));
+    Serial.print(F(" GyroY: "));
+    Serial.print(String(imu_lastState.gyroY, dp));
+    Serial.print(F(" GyroZ: "));
+    Serial.print(String(imu_lastState.gyroZ, dp));
+    Serial.print(F(" MagX: "));
+    Serial.print(String(imu_lastState.magX, dp));
+    Serial.print(F(" MagY: "));
+    Serial.print(String(imu_lastState.magY, dp));
+    Serial.print(F(" MagZ: "));
+    Serial.print(String(imu_lastState.magZ, dp));
+    Serial.print(F(" Yaw: "));
+    Serial.print(String(imu_lastState.yaw, dp));
+    Serial.print(F(" Pitch: "));
+    Serial.print(String(imu_lastState.pitch, dp));
+    Serial.print(F(" Roll: "));
+    Serial.print(String(imu_lastState.roll, dp));
+    Serial.print(F(" Temp: "));
+    Serial.print(String(imu_lastState.temperature, dp));
+    Serial.print(F(" Count: "));
+    Serial.print(String(imu_lastState.count));
+    Serial.print(F(" Refresh Rate: "));
+    Serial.println(String(imu_lastState.refreshRate, dp));
+//*/
 }
 
 // initialises the radio (APC220)
@@ -361,6 +397,8 @@ void* radio_readData() {
 }
 
 void buzzer_buzzError(int beepCount) {
+    Serial.flush();
+
     digitalWrite(12, HIGH);
     delay(3000);
     digitalWrite(12, LOW);
@@ -373,13 +411,14 @@ void buzzer_buzzError(int beepCount) {
             digitalWrite(12, LOW);
             delay(200);
         }
-        
+
         delay(1000);
     }
 }
 
 void setup() {
     Serial.begin(9600);
+    digitalWrite(13, LOW); // turn off internal LED (it's on by default?)
 
     radio_buffer = (uint8_t*)malloc(32);
 
@@ -416,7 +455,7 @@ void loop() {
 
     if (data) {
         Serial.println((const char*)data);
-        
+
         switch (data[0]) {
             case 0xBA: {
                 logger_sendData("launch packet received");
