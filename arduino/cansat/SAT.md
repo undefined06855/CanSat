@@ -115,18 +115,21 @@ Sent by the base when the satellite should stop collecting data.
 The You Fucked Up&trade; buzzer buzzes the amount of beeps relating to the error code (call `buzzer_buzzError(error)`)
 
 | Code | Error |
+| -----: | :----- |
 | 0xFF | No error |
 | 0x01 | IMU setup failed |
 | 0x02 | Logger setup failed |
 | 0x03 | Radio setup failed |
 
 ### Radio Config String
+
 `WR <frequency> <rf data rate> <output power> <uart rate> <series checkout>`
+
 Possible values:
-    - Frequency (KHz), (434MHz = 434000 etc)
-    - RF Data Rate: 1, 2, 3 and 4 refer to 2400, 4800, 9600 and 19200bps
-    - Output Power: 0 to 9, 9 meaning 13dBm(20mW)
-    - UART Rate: 0, 1, 2, 3, 4, 5 and 6 refer to 1200, 2400, 4800, 9600, 19200, 38400, 57600bps
-    - Series Checkout: 0 means no check, 1 means even parity, 2 means odd parity.
+    * Frequency (KHz), (434MHz = 434000 etc)
+    * RF Data Rate: 1, 2, 3 and 4 refer to 2400, 4800, 9600 and 19200bps
+    * Output Power: 0 to 9, 9 meaning 13dBm(20mW)
+    * UART Rate: 0, 1, 2, 3, 4, 5 and 6 refer to 1200, 2400, 4800, 9600, 19200, 38400, 57600bps
+    * Series Checkout: 0 means no check, 1 means even parity, 2 means odd parity.
 
 Ours is configured with `"WR 433900 1 9 1 0"` (433.9MHz, 2400bps, 13dBm (whatever this means), 2400bps, no check)
