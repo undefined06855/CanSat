@@ -9,8 +9,8 @@
  * Arduino 10  -  Datalogger (RX)
  * Arduino 11  -  Datalogger (TX)
  * Arduino 12  -  You Fucked Up Buzzer
+ * Arduino 6   -  Initialised LED
  *
- * Note: don't connect anything to pin 13 since the internal light is used to show when it's finished initialising!
  *
  * Requirements:
  *  - https://github.com/sparkfun/SparkFun_MPU-9250_Breakout_Arduino_Library (install as zip)
@@ -418,7 +418,6 @@ void buzzer_buzzError(int beepCount) {
 
 void setup() {
     Serial.begin(9600);
-    digitalWrite(13, LOW); // turn off internal LED (it's on by default?)
 
     radio_buffer = (uint8_t*)malloc(32);
 
@@ -442,7 +441,7 @@ void setup() {
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
     radio_sendData(VERSION_STRING "\n");
-    digitalWrite(13, HIGH); // turn on internal LED
+    digitalWrite(6, HIGH); // turn on initialised led
 }
 
 // 0 - waiting

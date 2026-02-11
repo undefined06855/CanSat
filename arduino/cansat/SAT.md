@@ -11,6 +11,9 @@ Datalogger is connected through serial
 A You Fucked Up&trade; buzzer is connected to Arduino pin 12 to beep initialisation errors. See error codes below for
 a list of the error codes.
 
+There are two internal LEDs, the green one is connected to pin 6 and is turned on when the CanSat intialises, and the
+red one is connected to the AUX pin on the radio, and flickers when radio packets are being sent.
+
 See circuit.cddx (or the CDR) for a circuit diagram.
 
 ## Arduino Pin Mapping
