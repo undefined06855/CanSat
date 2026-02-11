@@ -8,7 +8,7 @@
  * Arduino 9   -  APC220 pin 3 (TX)
  * Arduino 10  -  Datalogger (RX)
  * Arduino 11  -  Datalogger (TX)
- * Arduino 12  -  You Fucked Up Buzzer
+ * Arduino 5  -  You Fucked Up Buzzer
  * Arduino 6   -  Initialised LED
  *
  *
@@ -399,16 +399,16 @@ void* radio_readData() {
 void buzzer_buzzError(int beepCount) {
     Serial.flush();
 
-    digitalWrite(12, HIGH);
+    digitalWrite(5, HIGH);
     delay(3000);
-    digitalWrite(12, LOW);
+    digitalWrite(5, LOW);
     delay(2000);
 
     while (true) {
         for (int i = 0; i < beepCount; i++) {
-            digitalWrite(12, HIGH);
+            digitalWrite(5, HIGH);
             delay(200);
-            digitalWrite(12, LOW);
+            digitalWrite(5, LOW);
             delay(200);
         }
 
