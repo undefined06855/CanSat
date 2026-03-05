@@ -8,7 +8,7 @@ GY-91 is connected through hardware i2c
 Radio is connected through serial
 Datalogger is connected through serial
 
-A You Fucked Up&trade; buzzer is connected to Arduino pin 5 to beep initialisation errors. See error codes below for
+A You Fucked Up&trade; buzzer is connected to Arduino pin 12 to beep initialisation errors. See error codes below for
 a list of the error codes.
 
 There are two internal LEDs, the green one is connected to pin 6 and is turned on when the CanSat intialises, and the

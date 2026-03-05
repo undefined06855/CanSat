@@ -41,7 +41,7 @@ MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
 SoftwareSerial logger(11, 10); // tx, rx
 SoftwareSerial radio(9, 8); // tx, rx
 
-struct ImuState {
+struct __attribute__((packed)) ImuState {
     float accelX, accelY, accelZ;
     float gyroX, gyroY, gyroZ;
     float magX, magY, magZ;
@@ -53,13 +53,13 @@ struct ImuState {
 
 // TODO: move prefix+checksum into separate struct, make util to generate it from prefix, data, size for alignment
 // https://discord.com/channels/911701438269386882/1248524007859290205/1463990784364908832
-struct ImuPacket {
+struct __attribute__((packed)) ImuPacket {
     uint8_t prefix;
     uint16_t checksum;
     ImuState data;
 };
 
-struct IdlePacket {
+struct __attribute__((packed)) IdlePacket {
     uint8_t prefix;
     uint8_t error;
     char name[8];
@@ -214,9 +214,6 @@ void imu_read() {
                   * *(getQ()+3)) * RAD_TO_DEG;
 
     imu.delt_t = millis() - imu.count;
-    imu.count = millis();
-    imu.sumCount = 0;
-    imu.sum = 0;
 
     imu_lastState = {
         imu.ax * 1000, imu.ay * 1000, imu.az * 1000, // values in milliGs
@@ -227,6 +224,10 @@ void imu_read() {
         millis(),
         imu.sumCount / imu.sum
     };
+
+    imu.count = millis();
+    imu.sumCount = 0;
+    imu.sum = 0;
 }
 
 // initialises the logger
@@ -301,9 +302,10 @@ void logger_logLastIMUReading() {
     buf.concat(String(imu_lastState.count));
     buf.concat("$");
     buf.concat(String(imu_lastState.refreshRate, dp));
+    buf.concat("\n");
 
     logger_sendDataRaw(buf.c_str());
-/*
+//*
     Serial.print(F(" AccelX: "));
     Serial.print(String(imu_lastState.accelX, dp));
     Serial.print(F(" AccelY: "));
@@ -344,6 +346,7 @@ bool radio_setup() {
     Serial.println("beginning at 2400 baud, writing pin 7 high");
 
     radio.begin(2400);
+    pinMode(7, OUTPUT);
     digitalWrite(7, HIGH);
 
     Serial.println(F("-- RADIO SETUP COMPLETE --"));
@@ -399,6 +402,7 @@ void* radio_readData() {
 void buzzer_buzzError(int beepCount) {
     Serial.flush();
 
+    pinMode(5, OUTPUT);
     digitalWrite(5, HIGH);
     delay(3000);
     digitalWrite(5, LOW);
@@ -407,9 +411,9 @@ void buzzer_buzzError(int beepCount) {
     while (true) {
         for (int i = 0; i < beepCount; i++) {
             digitalWrite(5, HIGH);
-            delay(200);
+            delay(100);
             digitalWrite(5, LOW);
-            delay(200);
+            delay(100);
         }
 
         delay(1000);
@@ -441,6 +445,7 @@ void setup() {
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
     radio_sendData(VERSION_STRING "\n");
+    pinMode(6, OUTPUT);
     digitalWrite(6, HIGH); // turn on initialised led
 }
 
@@ -462,6 +467,7 @@ void loop() {
 
             case 0xBB: {
                 logger_sendData("radio setup packet received");
+                pinMode(7, OUTPUT);
                 digitalWrite(7, LOW);
                 radio_sendData((char*)&data[1]);
                 digitalWrite(7, HIGH);

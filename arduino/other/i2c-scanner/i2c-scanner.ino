@@ -19,7 +19,7 @@
 // Version 5, March 28, 2013
 //    As version 4, but address scans now to 127.
 //    A sensor seems to use address 120.
-// 
+//
 //
 // This sketch tests the standard 7-bit addresses
 // Devices with higher bit address might not be seen properly.
@@ -30,6 +30,17 @@
 
 void setup()
 {
+      pinMode(A5, OUTPUT);   // SCL
+  pinMode(A4, INPUT);    // SDA
+
+  for (int i = 0; i < 20; i++) {
+    digitalWrite(A5, LOW);
+    delayMicroseconds(5);
+    digitalWrite(A5, HIGH);
+    delayMicroseconds(5);
+  }
+
+
   Wire.begin();
 
   Serial.begin(9600);
@@ -45,7 +56,7 @@ void loop()
   Serial.println("Scanning...");
 
   nDevices = 0;
-  for(address = 1; address < 127; address++ ) 
+  for (address = 1; address < 127; address++ )
   {
     // The i2c_scanner uses the return value of
     // the Write.endTransmisstion to see if
@@ -56,25 +67,25 @@ void loop()
     if (error == 0)
     {
       Serial.print("I2C device found at address 0x");
-      if (address<16) 
+      if (address < 16)
         Serial.print("0");
-      Serial.print(address,HEX);
+      Serial.print(address, HEX);
       Serial.println("  !");
 
       nDevices++;
     }
-    else if (error==4) 
+    else if (error == 4)
     {
       Serial.print("Unknow error at address 0x");
-      if (address<16) 
+      if (address < 16)
         Serial.print("0");
-      Serial.println(address,HEX);
-    }    
+      Serial.println(address, HEX);
+    }
   }
   if (nDevices == 0)
     Serial.println("No I2C devices found\n");
   else
     Serial.println("done\n");
 
-  delay(5000);           // wait 5 seconds for next scan
+  delay(200);           // wait .2 seconds for next scan
 }

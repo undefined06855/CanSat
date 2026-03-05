@@ -5,15 +5,19 @@
 SoftwareSerial apc(9, 8);
 
 void setup() {
-   Serial.begin(115200);
+   Serial.begin(9600);
    apc.begin(2400);
+   digitalWrite(13, LOW);
 }
 
 unsigned long timeSent = 0;
 int received = 1;
 
+int timeSetHigh = 0;
+
 void loop() {
-  /**/ // comment if this is for CANSAT
+  if (timeSetHigh + 200 < millis()) digitalWrite(13, LOW);
+  /** // comment if this is for CANSAT
   if (received) {
      Serial.println("Sending...");
      apc.println("aaaaaaaaaaaaaa");
@@ -28,7 +32,7 @@ void loop() {
   //*/
 
   if (apc.available() > 0) {
-    /**/ // comment if this is for CANSAT
+    /** // comment if this is for CANSAT
     Serial.print("Ping: ");
     Serial.print((millis() - timeSent) / 2);
     Serial.println("ms");
@@ -36,7 +40,9 @@ void loop() {
     //*/
 
     // uncomment if this is for GROUND
-//    apc.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    apc.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    digitalWrite(13, HIGH);
+    timeSetHigh = millis();
     while (apc.available() > 0) {
       byte test = apc.read();
       Serial.print((char) test);
