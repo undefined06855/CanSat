@@ -99,7 +99,7 @@ void setup()
     Serial.print(" I should be 0x");
     Serial.println(0x48, HEX);
 
-    if (d != 0xFF)
+    if (d != 0x48)
     {
       // Communication failed, stop here
       Serial.println(F("Communication failed, abort!"));

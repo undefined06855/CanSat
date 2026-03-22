@@ -1,20 +1,17 @@
 /*
- * All this does and needs to do really is get the shit from the radio and shove it back out the serial port at 115200 baud
- * We can (and should) send binary data
+ * Ground station passthrough: bridge binary data between APC220 and USB serial.
  */
 
 #include <SoftwareSerial.h>
 
 SoftwareSerial apc(9, 8); // tx, rx
-uint8_t* buffer;
-uint32_t right;
 
 void setup() {
     Serial.begin(115200);
     apc.begin(2400);
 
-    buffer = (uint8_t*)malloc(1024);
-    right = 0;
+    pinMode(7, OUTPUT);
+    digitalWrite(7, HIGH); // keep APC220 in normal run mode
 
     pinMode(13, OUTPUT);
 }
@@ -23,21 +20,7 @@ void loop() {
     bool output = false;
     while (apc.available() > 0) {
         output = true;
-        uint8_t one = apc.read();
-        if (one == '\n') {
-            // newline, send out buffer
-            buffer[right] = 0x00;
-            Serial.println((char*)buffer);
-            right = 0;
-            continue;
-        }
-
-        if (one == 0x00) {
-            // uh
-            one = '!';
-        }
-
-        buffer[right++] = one;
+        Serial.write((uint8_t)apc.read());
     }
 
     if (output) digitalWrite(13, HIGH);
@@ -45,6 +28,5 @@ void loop() {
 
     while (Serial.available() > 0) {
         apc.write(Serial.read());
-        delay(35);
     }
 }

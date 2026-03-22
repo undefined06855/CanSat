@@ -62,24 +62,20 @@ See circuit.cddx (or the CDR) for a circuit diagram.
 
 ## Radio Packets
 
-### Idle Packet (SAT -> BASE)
-Sent by the satellite while waiting for the ground startup packet. The CanSat at this point is completely initialised
-and is ready to start.
+All multi-byte values are little-endian (`uint16`, `uint32`, `float`) because packets are sent from AVR memory layout.
 
-| Size | Part | Example |
-| -----: | :----- | :-----: |
-| `1` | Prefix | `0xAA` |
-| `1` | Error | See error table below |
-| `8` | Version Name | A null-terminated 7 letter SkyWing name, e.g. `0x80 0x69 0x82 0x73 0x76 0x32 0x32 0x00` "`PERIL  \x00`" |
+If the magnetometer (`AK8963`) fails to initialize (for example `WHO_AM_I = 0xFF`), flight firmware now continues in degraded mode using accel/gyro only. Yaw quality may degrade, but telemetry and radio comms continue.
+
+Ground APC220 `SET` must be held high during normal operation. If `SET` is floating or low, base-to-satellite commands may be ignored.
 
 ### Data Packet (SAT -> BASE)
-Sent as often as possible by the satellite while in the air. Don't log important data using these since they could cut
-out, only use the data from the datalogger.
+Sent continuously by the satellite after boot.
 
 | Size | Part | Example |
 | -----: | :----- | :-----: |
+| `2` | Begin Marker | `0x0B 0xB0` |
 | `1` | Prefix | `0xAB` |
-| `2` | Checksum | A CRC-16 checksum on the rest of the packet, e.g. `0x12 0x23` |
+| `2` | Checksum | A CRC-16 checksum on the payload bytes, e.g. `0x12 0x23` |
 | `4`, `4`, `4` | Accelerometer | 3 floats of accelerometer data, in milliGs |
 | `4`, `4`, `4` | Gyroscope | 3 floats of gyroscope data, in degrees per second |
 | `4`, `4`, `4` | Magnetometer | 3 floats of magnetometer data, in degrees per second |
@@ -89,8 +85,7 @@ out, only use the data from the datalogger.
 | `4` | Refresh rate | The refresh rate of the IMU as a float |
 
 ### Launch Packet (SAT <- BASE)
-Sent by the base when the satellite should start collecting data. Idle packets will stop being sent and data packets
-will start.
+Sent by the base to mark launch in the datalogger output.
 
 | Size | Part | Example |
 | -----: | :----- | :-----: |
@@ -105,7 +100,7 @@ Sent by the base to configure radio signals.
 | `?` | Null-terminated config string (see bottom) | `"WR 433900 3 9 3 0"` |
 
 ### Land packet (SAT <- BASE)
-Sent by the base when the satellite should stop collecting data.
+Sent by the base to mark landing in the datalogger output.
 
 | Size | Part | Example |
 | -----: | :----- | :-----: |
@@ -119,6 +114,14 @@ Sent by the base to test the buzzer (or connectivity in general).
 | `1` | Prefix | `0xBD` |
 
 ## References
+
+### Marker Lines
+
+The datalogger now includes marker lines that can be parsed later:
+
+`MARKER,<millis>,LAUNCH`
+
+`MARKER,<millis>,LAND`
 
 ### Error Codes
 

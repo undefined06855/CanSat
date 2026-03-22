@@ -1,4 +1,4 @@
-/*
+n/*
  * CanSat data logging + communication
  *
  * Arduino A5  -  GY-91 pin 5 (clock)
@@ -34,8 +34,11 @@
 
 #define VERSION_STRING "KESTREL"
 
+#define VERBOSE_IMU_SERIAL 0
+#define TELEMETRY_INTERVAL_MS 220
+#define LOGGER_INTERVAL_MS 1000
+
 #define MPU_ADDRESS 0x68
-#define MAGNET_ADDRESS 0x76
 
 MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
 SoftwareSerial logger(11, 10); // tx, rx
@@ -67,20 +70,22 @@ struct ImuState {
     float refreshRate;
 };
 
-DEFINE_RADIO_PACKET(IdlePacket, 0xAA,
-    uint8_t error;
-    char name[8];
-);
-
 DEFINE_RADIO_PACKET(ImuPacket, 0xAB,
     uint16_t checksum;
     ImuState data;
 );
 
 ImuState imu_lastState = { 0 };
-uint8_t* radio_buffer;
+char radio_config_buffer[48];
+int radio_config_len = 0;
+bool radio_config_mode = false;
+uint32_t radio_config_lastByteMs = 0;
+
+uint32_t telemetry_lastSendMs = 0;
+uint32_t logger_lastSendMs = 0;
 
 uint8_t error = 0xff;
+bool magnetometer_available = false;
 
 // https://github.com/Schildkroet/CRC/blob/master/CRC.c#L106
 uint16_t checksum_calculate(const uint8_t* data, int size) {
@@ -140,44 +145,55 @@ bool imu_setup() {
     // magnetometer setup
 
     Serial.println(F("imu magnetometer setup..."));
-    byte d = imu.readByte(0x76, WHO_AM_I_AK8963); // 0x76 - our address (i think we have a bootleg? a few values aren't filled in but it seems to be   okay....)
-    Serial.print(F("imu magnetometer whoami (0x00): 0x")); Serial.println(d, HEX);
-    if (d != 0x00) return false;
+    byte d = imu.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
+    Serial.print(F("imu magnetometer whoami (0x48): 0x")); Serial.println(d, HEX);
+    if (d != 0x48) {
+        Serial.println(F("imu magnetometer unavailable, continuing without magnetometer"));
+        magnetometer_available = false;
+    } else {
+        magnetometer_available = true;
 
-    Serial.println(F("imu magnetometer factory values:"));
-    Serial.print(F("x-axis factory sensitivity adjustment value: "));
-    Serial.println(imu.factoryMagCalibration[0], 2);
-    Serial.print(F("y-axis factory sensitivity adjustment value: "));
-    Serial.println(imu.factoryMagCalibration[1], 2);
-    Serial.print(F("z-axis factory sensitivity adjustment value: "));
-    Serial.println(imu.factoryMagCalibration[2], 2);
+        Serial.println(F("imu magnetometer init..."));
+        imu.initAK8963(imu.factoryMagCalibration);
 
-    Serial.println(F("imu magnetometer init..."));
-    imu.initAK8963(imu.factoryMagCalibration);
+        Serial.println(F("imu magnetometer factory values:"));
+        Serial.print(F("x-axis factory sensitivity adjustment value: "));
+        Serial.println(imu.factoryMagCalibration[0], 2);
+        Serial.print(F("y-axis factory sensitivity adjustment value: "));
+        Serial.println(imu.factoryMagCalibration[1], 2);
+        Serial.print(F("z-axis factory sensitivity adjustment value: "));
+        Serial.println(imu.factoryMagCalibration[2], 2);
+    }
 
     Serial.println(F("imu get sensor resolutions (wait 19 seconds)..."));
     imu.getAres();
     imu.getGres();
-    imu.getMres();
+    if (magnetometer_available) {
+        imu.getMres();
 
-    imu.magCalMPU9250(imu.magBias, imu.magScale); // delays 4s, gathers 15s of data
-    Serial.println(F("imu magnetometer mag biases (mG)"));
-    Serial.println(imu.magBias[0]);
-    Serial.println(imu.magBias[1]);
-    Serial.println(imu.magBias[2]);
+        imu.magCalMPU9250(imu.magBias, imu.magScale); // delays 4s, gathers 15s of data
+        Serial.println(F("imu magnetometer mag biases (mG)"));
+        Serial.println(imu.magBias[0]);
+        Serial.println(imu.magBias[1]);
+        Serial.println(imu.magBias[2]);
 
-    Serial.println(F("imu magnetometer mag scale (mG)"));
-    Serial.println(imu.magScale[0]);
-    Serial.println(imu.magScale[1]);
-    Serial.println(imu.magScale[2]);
+        Serial.println(F("imu magnetometer mag scale (mG)"));
+        Serial.println(imu.magScale[0]);
+        Serial.println(imu.magScale[1]);
+        Serial.println(imu.magScale[2]);
+    } else {
+        imu.mx = 0.0f;
+        imu.my = 0.0f;
+        imu.mz = 0.0f;
+    }
 
     Serial.println(F("-- IMU SETUP COMPLETE --"));
     return true;
 }
 
-void imu_read() {
+bool imu_read() {
     int status = imu.readByte(MPU9250_ADDRESS_AD0, INT_STATUS);
-    if (~status & 0x01) return; // bit 1 is low, no data right now
+    if (~status & 0x01) return false; // bit 1 is low, no data right now
 
     // you know okay so im not entirely sure why this is doing the thing it is
     // but the example
@@ -194,10 +210,16 @@ void imu_read() {
     imu.gy = imu.gyroCount[1] * imu.gRes;
     imu.gz = imu.gyroCount[2] * imu.gRes;
 
-    imu.readMagData(imu.magCount);
-    imu.mx = imu.magCount[0] * imu.mRes * imu.factoryMagCalibration[0] - imu.magBias[0];
-    imu.my = imu.magCount[1] * imu.mRes * imu.factoryMagCalibration[1] - imu.magBias[1];
-    imu.mz = imu.magCount[2] * imu.mRes * imu.factoryMagCalibration[2] - imu.magBias[2];
+    if (magnetometer_available) {
+        imu.readMagData(imu.magCount);
+        imu.mx = imu.magCount[0] * imu.mRes * imu.factoryMagCalibration[0] - imu.magBias[0];
+        imu.my = imu.magCount[1] * imu.mRes * imu.factoryMagCalibration[1] - imu.magBias[1];
+        imu.mz = imu.magCount[2] * imu.mRes * imu.factoryMagCalibration[2] - imu.magBias[2];
+    } else {
+        imu.mx = 0.0f;
+        imu.my = 0.0f;
+        imu.mz = 0.0f;
+    }
 
     imu.updateTime();
 
@@ -240,6 +262,8 @@ void imu_read() {
     imu.count = millis();
     imu.sumCount = 0;
     imu.sum = 0;
+
+    return true;
 }
 
 // initialises the logger
@@ -317,7 +341,7 @@ void logger_logLastIMUReading() {
     buf.concat("\n");
 
     logger_sendDataRaw(buf.c_str());
-//*
+#if VERBOSE_IMU_SERIAL
     Serial.print(F(" AccelX: "));
     Serial.print(String(imu_lastState.accelX, dp));
     Serial.print(F(" AccelY: "));
@@ -348,7 +372,19 @@ void logger_logLastIMUReading() {
     Serial.print(String(imu_lastState.count));
     Serial.print(F(" Refresh Rate: "));
     Serial.println(String(imu_lastState.refreshRate, dp));
-//*/
+#endif
+}
+
+void logger_writeMarker(const char* markerName) {
+    String buf = String("MARKER,");
+    buf.concat(String(millis()));
+    buf.concat(",");
+    buf.concat(markerName);
+    buf.concat("\n");
+
+    logger_sendDataRaw(buf.c_str());
+    Serial.print(F("marker: "));
+    Serial.println(markerName);
 }
 
 // initialises the radio (APC220)
@@ -371,10 +407,7 @@ void radio_sendData(const char* data) {
 }
 
 void radio_sendBytes(const uint8_t* data, int size) {
-    for (int i = 0; i < size; i++) {
-        radio.write(data[i]);
-        delay(35); // else it drops bytes
-    }
+    radio.write(data, size);
 
     radio.flush();
 }
@@ -389,27 +422,61 @@ void radio_sendLastIMUReading() {
     radio_sendBytes((uint8_t*)&data, sizeof(ImuPacket));
 }
 
-void radio_sendIdlePacket() {
-    IdlePacket data = CREATE_RADIO_PACKET(
-        IdlePacket,
-        error,
-        VERSION_STRING
-    );
+void radio_handleCommandByte(uint8_t command) {
+    switch (command) {
+        case 0xBA: {
+            logger_sendData("launch packet received");
+            logger_writeMarker("LAUNCH");
+        } break;
 
-    radio_sendBytes((uint8_t*)&data, sizeof(IdlePacket));
+        case 0xBB: {
+            radio_config_mode = true;
+            radio_config_len = 0;
+            radio_config_lastByteMs = millis();
+        } break;
+
+        case 0xBC: {
+            logger_sendData("land packet received");
+            logger_writeMarker("LAND");
+        } break;
+
+        case 0xBD: {
+            logger_sendData("buzzer test packet received");
+            tone(5, 1800, 150);
+        } break;
+    }
 }
 
-void* radio_readData() {
-    int bytes = radio.available();
-    if (bytes == 0) return NULL;
+void radio_processInputByte(uint8_t byteValue) {
+    if (radio_config_mode) {
+        if (byteValue == 0x00 || byteValue == '\n' || byteValue == '\r') {
+            radio_config_buffer[radio_config_len] = 0x00;
+            logger_sendData("radio setup packet received");
+            digitalWrite(7, LOW);
+            radio_sendData(radio_config_buffer);
+            radio_sendData("\r\n");
+            digitalWrite(7, HIGH);
+            radio_config_mode = false;
+            radio_config_len = 0;
+            radio_config_lastByteMs = 0;
+            return;
+        }
 
-    radio_buffer[bytes + 1] = 0x00;
+        if (radio_config_len < (int)sizeof(radio_config_buffer) - 1) {
+            radio_config_buffer[radio_config_len++] = (char)byteValue;
+            radio_config_lastByteMs = millis();
+        }
 
-    for (int i = 0; i < bytes; i++) {
-        radio_buffer[i] = radio.read();
+        return;
     }
 
-    return radio_buffer;
+    radio_handleCommandByte(byteValue);
+}
+
+void radio_pollIncomingCommands() {
+    while (radio.available() > 0) {
+        radio_processInputByte((uint8_t)radio.read());
+    }
 }
 
 void buzzer_buzzError(int beepCount) {
@@ -434,9 +501,7 @@ void buzzer_buzzError(int beepCount) {
 }
 
 void setup() {
-    Serial.begin(9600);
-
-    radio_buffer = (uint8_t*)malloc(32);
+    Serial.begin(115200);
 
     if (!imu_setup()) {
         Serial.println(F("-- IMU SETUP FAILED! --"));
@@ -457,58 +522,31 @@ void setup() {
     }
 
     logger_sendData("SATELLITE VERSION " VERSION_STRING);
-    radio_sendData(VERSION_STRING "\n");
     pinMode(6, OUTPUT);
     digitalWrite(6, HIGH); // turn on initialised led
 }
 
-// 0 - waiting
-// 1 - launched
-int state = 0;
-
 void loop() {
-    uint8_t* data = (uint8_t*)radio_readData();
+    radio_pollIncomingCommands();
 
-    if (data) {
-        for (int i = 0; i < 12; i++) Serial.print(data[i], HEX);
-        Serial.println();
-
-        switch (data[0]) {
-            case 0xBA: {
-                logger_sendData("launch packet received");
-                state = 1;
-            } break;
-
-            case 0xBB: {
-                logger_sendData("radio setup packet received");
-                pinMode(7, OUTPUT);
-                digitalWrite(7, LOW);
-                radio_sendData((char*)&data[1]);
-                digitalWrite(7, HIGH);
-            } break;
-
-            case 0xBC: {
-                logger_sendData("land packet received");
-                state = 0;
-            }
-        }
+    if (radio_config_mode && millis() - radio_config_lastByteMs > 1500) {
+        logger_sendData("radio setup packet timed out");
+        radio_config_mode = false;
+        radio_config_len = 0;
+        radio_config_lastByteMs = 0;
     }
 
-    switch (state) {
-        case 0: {
-            // send idle packet
-            // idle packet contains error code
-            // (though since buzzer buzzes forever it never finishes initialising so this will never be called)
-            radio_sendIdlePacket();
-            delay(200);
-        } break;
+    bool imuUpdated = imu_read();
 
-        case 1: {
-            // send imu data
-            // TODO: need to only send radio reading every so often
-            imu_read();
-            logger_logLastIMUReading();
+    if (imuUpdated) {
+        if (millis() - telemetry_lastSendMs >= TELEMETRY_INTERVAL_MS) {
+            telemetry_lastSendMs = millis();
             radio_sendLastIMUReading();
-        } break;
+        }
+
+        if (millis() - logger_lastSendMs >= LOGGER_INTERVAL_MS) {
+            logger_lastSendMs = millis();
+            logger_logLastIMUReading();
+        }
     }
 }

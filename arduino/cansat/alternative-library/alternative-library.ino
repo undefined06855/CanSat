@@ -38,7 +38,7 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   /* I2C bus,  0x68 address */
-  imu.Config(&Wire, /*bfs::Mpu9250::I2C_ADDR_PRIM*/ 0x76);
+  imu.Config(&Wire, /*bfs::Mpu9250::I2C_ADDR_PRIM*/ 0x68);
   /* Initialize and configure IMU */
   if (!imu.Begin()) {
     Serial.println("Error initializing communication with IMU");
