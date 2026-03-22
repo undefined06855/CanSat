@@ -30,7 +30,7 @@
 
 void setup()
 {
-      pinMode(A5, OUTPUT);   // SCL
+  pinMode(A5, OUTPUT);   // SCL
   pinMode(A4, INPUT);    // SDA
 
   for (int i = 0; i < 20; i++) {

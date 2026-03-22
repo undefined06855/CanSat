@@ -3,7 +3,10 @@ package main
 import (
     "log"
     "runtime"
-    
+
+    "undefined06855/CanSatHub/can_ui"
+    "undefined06855/CanSatHub/can_io"
+
     "github.com/AllenDang/cimgui-go/backend"
     "github.com/AllenDang/cimgui-go/backend/glfwbackend"
 )
@@ -11,7 +14,7 @@ import (
 
 func init() {
     runtime.LockOSThread()
-    initLogs()
+    can_io.InitLogs()
 }
 
 func main() {
@@ -21,5 +24,5 @@ func main() {
         log.Fatal(err)
     }
 
-    setup(back)
+    can_ui.Setup(back)
 }

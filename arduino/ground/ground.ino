@@ -42,4 +42,9 @@ void loop() {
 
     if (output) digitalWrite(13, HIGH);
     else digitalWrite(13, LOW);
+
+    while (Serial.available() > 0) {
+        apc.write(Serial.read());
+        delay(35);
+    }
 }

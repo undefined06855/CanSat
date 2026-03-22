@@ -111,6 +111,13 @@ Sent by the base when the satellite should stop collecting data.
 | -----: | :----- | :-----: |
 | `1` | Prefix | `0xBC` |
 
+### Test Buzzer Packet (SAT <- BASE)
+Sent by the base to test the buzzer (or connectivity in general).
+
+| Size | Part | Example |
+| -----: | :----- | :-----: |
+| `1` | Prefix | `0xBD` |
+
 ## References
 
 ### Error Codes

@@ -26,11 +26,11 @@
 #include <quaternionFilters.h>
 #include <SoftwareSerial.h>
 
-// TODO: rewrite all of this for version peril this code better not actually go up in the sky
-// now that i think about it kestrel was a pretty good first version name like at least she
-// wasnt the last version because she literally dies
-// tui can you write more skywings into the story im running out of well known characters there's like FOUR
-// this is why you dont use fictional character names for versioning
+// hey i never ended up rewriting it
+// funny that
+
+// anyway the ---- comments look like ai I PROMISe they're not if i used ai i think this code would probably
+// be better than it is
 
 #define VERSION_STRING "KESTREL"
 
@@ -41,7 +41,23 @@ MPU9250 imu(MPU9250_ADDRESS_AD0, Wire, 400000);
 SoftwareSerial logger(11, 10); // tx, rx
 SoftwareSerial radio(9, 8); // tx, rx
 
-struct __attribute__((packed)) ImuState {
+#define DEFINE_RADIO_PACKET(name, id, ...) \
+    uint8_t __##name##__id = id; \
+    struct __attribute__((packed)) name { \
+        uint16_t begin; \
+        uint8_t prefix; \
+        __VA_ARGS__ \
+    }
+
+// 0xb00b is packet begin prefix
+#define CREATE_RADIO_PACKET(name, ...) \
+    { \
+        0xb00b, \
+        __##name##__id, \
+        __VA_ARGS__ \
+    }
+
+struct ImuState {
     float accelX, accelY, accelZ;
     float gyroX, gyroY, gyroZ;
     float magX, magY, magZ;
@@ -51,19 +67,15 @@ struct __attribute__((packed)) ImuState {
     float refreshRate;
 };
 
-// TODO: move prefix+checksum into separate struct, make util to generate it from prefix, data, size for alignment
-// https://discord.com/channels/911701438269386882/1248524007859290205/1463990784364908832
-struct __attribute__((packed)) ImuPacket {
-    uint8_t prefix;
-    uint16_t checksum;
-    ImuState data;
-};
-
-struct __attribute__((packed)) IdlePacket {
-    uint8_t prefix;
+DEFINE_RADIO_PACKET(IdlePacket, 0xAA,
     uint8_t error;
     char name[8];
-};
+);
+
+DEFINE_RADIO_PACKET(ImuPacket, 0xAB,
+    uint16_t checksum;
+    ImuState data;
+);
 
 ImuState imu_lastState = { 0 };
 uint8_t* radio_buffer;
@@ -361,27 +373,28 @@ void radio_sendData(const char* data) {
 void radio_sendBytes(const uint8_t* data, int size) {
     for (int i = 0; i < size; i++) {
         radio.write(data[i]);
+        sleep(25); // else it drops bytes
     }
 
     radio.flush();
 }
 
 void radio_sendLastIMUReading() {
-    ImuPacket data = {
-        0xAB,
+    ImuPacket data = CREATE_RADIO_PACKET(
+        ImuPacket,
         checksum_calculate((uint8_t*)&imu_lastState, sizeof(imu_lastState)),
         imu_lastState
-    };
+    );
 
     radio_sendBytes((uint8_t*)&data, sizeof(ImuPacket));
 }
 
 void radio_sendIdlePacket() {
-    IdlePacket data = {
-        0xAA,
+    IdlePacket data = CREATE_RADIO_PACKET(
+        IdlePacket,
         error,
         VERSION_STRING
-    };
+    );
 
     radio_sendBytes((uint8_t*)&data, sizeof(IdlePacket));
 }
@@ -451,7 +464,7 @@ void setup() {
 
 // 0 - waiting
 // 1 - launched
-int state = 0;
+int state = 1;
 
 void loop() {
     uint8_t* data = (uint8_t*)radio_readData();

@@ -17,7 +17,7 @@ int timeSetHigh = 0;
 
 void loop() {
   if (timeSetHigh + 200 < millis()) digitalWrite(13, LOW);
-  /** // comment if this is for CANSAT
+  //** // comment if this is for CANSAT
   if (received) {
      Serial.println("Sending...");
      apc.println("aaaaaaaaaaaaaa");
@@ -32,20 +32,27 @@ void loop() {
   //*/
 
   if (apc.available() > 0) {
-    /** // comment if this is for CANSAT
+    //* // comment if this is for CANSAT
     Serial.print("Ping: ");
     Serial.print((millis() - timeSent) / 2);
     Serial.println("ms");
     received = 1;
     //*/
 
-    // uncomment if this is for GROUND
-    apc.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+//    while (apc.available() > 0) {
+//      byte test = apc.read();
+//      Serial.print((char) test);
+//    }
+
+    // comment if this is for GROUND
+    //*
+//    apc.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     digitalWrite(13, HIGH);
     timeSetHigh = millis();
     while (apc.available() > 0) {
       byte test = apc.read();
       Serial.print((char) test);
     }
+    //*/
   }
 }
