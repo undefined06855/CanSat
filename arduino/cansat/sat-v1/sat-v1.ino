@@ -111,7 +111,7 @@ bool imu_setup() {
     // gyro setup
 
     Serial.println(F("imu gyro setup..."));
-    byte c = imu.readByte(MPU9250_ADDRESS_AD0, WHO_AM_I_MPU9250); // 0x68 - our address (normal ad0)
+    byte c = imu.readByte(0x68, WHO_AM_I_MPU9250); // 0x68 - our address (normal ad0)
     Serial.print(F("imu gyro whoami (0x70): 0x")); Serial.println(c, HEX);
     if (c != 0x70) return false;
 
@@ -373,7 +373,7 @@ void radio_sendData(const char* data) {
 void radio_sendBytes(const uint8_t* data, int size) {
     for (int i = 0; i < size; i++) {
         radio.write(data[i]);
-        sleep(25); // else it drops bytes
+        delay(35); // else it drops bytes
     }
 
     radio.flush();
@@ -464,13 +464,14 @@ void setup() {
 
 // 0 - waiting
 // 1 - launched
-int state = 1;
+int state = 0;
 
 void loop() {
     uint8_t* data = (uint8_t*)radio_readData();
 
     if (data) {
-        Serial.println((const char*)data);
+        for (int i = 0; i < 12; i++) Serial.print(data[i], HEX);
+        Serial.println();
 
         switch (data[0]) {
             case 0xBA: {
@@ -499,6 +500,7 @@ void loop() {
             // idle packet contains error code
             // (though since buzzer buzzes forever it never finishes initialising so this will never be called)
             radio_sendIdlePacket();
+            delay(200);
         } break;
 
         case 1: {
